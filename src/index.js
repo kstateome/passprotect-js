@@ -80,33 +80,9 @@ function isIgnored(sensitiveData) {
  * changes.
  */
 function protectInputs() {
-  var inputs = document.getElementsByTagName("input");
+  var input = document.getElementById("id_password");
+  input.addEventListener("keyup", protectPasswordInput);
 
-  for (var i = 0; i < inputs.length; i++) {
-    switch (inputs[i].type) {
-      case "email":
-        //inputs[i].addEventListener("change", protectEmailInput);
-        break;
-      case "password":
-        inputs[i].addEventListener("change", protectPasswordInput);
-        break;
-    }
-  }
-
-  inputs = document.querySelectorAll("input[type='text']");
-  for (var i = 0; i < inputs.length; i++) {
-    if (inputs[i].name.toLowerCase().indexOf("email") !== -1) {
-      return inputs[i].addEventListener("change", protectEmailInput);
-    }
-
-    if (inputs[i].id.toLowerCase().indexOf("email") !== -1) {
-      return inputs[i].addEventListener("change", protectEmailInput);
-    }
-
-    if (inputs[i].placeholder.toLowerCase().indexOf("email") !== -1) {
-      return inputs[i].addEventListener("change", protectEmailInput);
-    }
-  }
 }
 
 
@@ -209,7 +185,8 @@ function protectPasswordInput(evt) {
   var hashPrefix = hash.slice(0, 5);
   var shortHash = hash.slice(5);
   var xmlHttp = new XMLHttpRequest();
-
+  var $text = $(".pass-text");
+  var $liValue = $("#password_li");
   xmlHttp.onreadystatechange = function() {
     if (xmlHttp.readyState === 4 && xmlHttp.status === 200) {
       var resp = xmlHttp.responseText.split("\n");
@@ -221,40 +198,37 @@ function protectPasswordInput(evt) {
           var message = [
             '<p>The password you just entered has been found in <b>' + numberFormatter(parseInt(data[1])) + '</b> data breaches. <b>This password is not safe to use</b>.</p>',
             '<p>This means attackers can easily find this password online and will often try to access accounts with it.</p>',
-            '<p>If you are currently using this password, please change it immediately to protect yourself. For more information, visit <a href="https://haveibeenpwned.com/" title="haveibeenpwned">Have I Been Pwned?</a>',
-            '<p>This notice will not show again for the duration of this session to give you time to update this password.</p>'
-          ].join('');
+            '<p>For more information, visit <a href="https://haveibeenpwned.com/" title="haveibeenpwned">Have I Been Pwned?</a>'
 
-          vex.dialog.alert({
-            message: "Unsafe password detected!",
-            input: message,
-            callback: function() {
-              // Cache this password once the user clicks the "I Understand" button
-              // so we don't continuously annoy the user with the same warnings.
-              //
-              // NOTE: We're using sessionStorage here (not localStorage) as we
-              // only want to not annoy the user for the duration of this
-              // session. Once they've come back to the site at a later time, we
-              // should bug them if they try to use the same password >:D
-              sessionStorage.setItem(getPasswordHash(inputValue), "true");
-            }
-          });
+          ].join('');
+          $text.html(message);
+         passwordIsBad();
+
         }
       }
     }
   };
 
-  // If this hash is cached, we shouldn't do anything.
-  if (isIgnored(getPasswordHash(inputValue))) {
-    return;
-  }
-
   // We're using the API with k-Anonymity searches to protect privacy.
   // You can read more about this here: https://haveibeenpwned.com/API/v2#SearchingPwnedPasswordsByRange
-  xmlHttp.open("GET", PASS_PROTECT_PASSWORD_CHECK_URI + hashPrefix, true);
-  xmlHttp.send(null);
+  if($liValue.hasClass("pass")) {
+    xmlHttp.open("GET", PASS_PROTECT_PASSWORD_CHECK_URI + hashPrefix, true);
+    xmlHttp.send(null);
+  }
+}
+function passwordIsGood(){
+  $("#id_password").removeClass("badPassword");
+  $("#id_password").addClass("goodPassword");
+  $("#password_li").removeClass("fail");
+  $("#password_li").addClass("pass");
 }
 
+function passwordIsBad(){
+  $("#id_password").removeClass("goodPassword");
+  $("#id_password").addClass("badPassword");
+  $("#password_li").removeClass("pass");
+  $("#password_li").addClass("fail");
+}
 
 // Bootstrap our passProtect functionality after the page has fully loaded.
 if (window.attachEvent) {
