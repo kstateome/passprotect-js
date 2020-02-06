@@ -81,8 +81,17 @@ function isIgnored(sensitiveData) {
  */
 function protectInputs() {
   var input = document.getElementById("id_password");
-  input.addEventListener("keyup", protectPasswordInput);
-
+  var text = document.getElementById("password-strength-display-text-span");
+  var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      if (mutation.type == "attributes") {
+        protectPasswordInput(input);
+      }
+    });
+  });
+  observer.observe(text, {
+    attributes: true //configure it to listen to attribute changes
+  });
 }
 
 
@@ -180,7 +189,7 @@ function getPasswordHash(password) {
  * @param {object} evt - The DOM event object.
  */
 function protectPasswordInput(evt) {
-  var inputValue = evt.currentTarget.value;
+  var inputValue = evt.value;
   var hash = sha1(inputValue).toUpperCase();
   var hashPrefix = hash.slice(0, 5);
   var shortHash = hash.slice(5);
@@ -211,16 +220,8 @@ function protectPasswordInput(evt) {
 
   // We're using the API with k-Anonymity searches to protect privacy.
   // You can read more about this here: https://haveibeenpwned.com/API/v2#SearchingPwnedPasswordsByRange
-  if($liValue.hasClass("pass")) {
-    xmlHttp.open("GET", PASS_PROTECT_PASSWORD_CHECK_URI + hashPrefix, true);
-    xmlHttp.send(null);
-  }
-}
-function passwordIsGood(){
-  $("#id_password").removeClass("badPassword");
-  $("#id_password").addClass("goodPassword");
-  $("#password_li").removeClass("fail");
-  $("#password_li").addClass("pass");
+  xmlHttp.open("GET", PASS_PROTECT_PASSWORD_CHECK_URI + hashPrefix, true);
+  xmlHttp.send(null);
 }
 
 function passwordIsBad(){
