@@ -4,6 +4,10 @@ import "../vendor/vex.css";
 import "../vendor/vex-theme-wireframe.css";
 import "./style.css";
 
+var zxcvbnAsync = require('zxcvbn-async');
+var zxcvbn = zxcvbnAsync.load({ sync: true });
+
+
 
 /**
  * Settings (for the Vex library)
@@ -196,7 +200,7 @@ function protectPasswordInput(evt) {
   var xmlHttp = new XMLHttpRequest();
   var $text = $(".pass-text");
   var $liValue = $("#password_li");
-  xmlHttp.onreadystatechange = function() {
+  xmlHttp.onreadystatechange = function () {
     if (xmlHttp.readyState === 4 && xmlHttp.status === 200) {
       var resp = xmlHttp.responseText.split("\n");
 
@@ -211,17 +215,27 @@ function protectPasswordInput(evt) {
 
           ].join('');
           $text.html(message);
-         passwordIsBad();
+          passwordIsBad();
 
         }
       }
     }
   };
 
-  // We're using the API with k-Anonymity searches to protect privacy.
-  // You can read more about this here: https://haveibeenpwned.com/API/v2#SearchingPwnedPasswordsByRange
-  xmlHttp.open("GET", PASS_PROTECT_PASSWORD_CHECK_URI + hashPrefix, true);
-  xmlHttp.send(null);
+        var aresult = zxcvbn(inputValue);
+        console.log("the score from zxcvbn is " + aresult.score);
+        if (aresult.score < 3) {
+          $text.html('<p>' + aresult.feedback.warning + '</p><p>' + aresult.feedback.suggestions + '</p>');
+          passwordIsBad();
+        } else {
+
+          // We're using the API with k-Anonymity searches to protect privacy.
+          // You can read more about this here: https://haveibeenpwned.com/API/v2#SearchingPwnedPasswordsByRange
+          xmlHttp.open("GET", PASS_PROTECT_PASSWORD_CHECK_URI + hashPrefix, true);
+          xmlHttp.send(null);
+        }
+
+
 }
 
 function passwordIsBad(){
@@ -229,6 +243,8 @@ function passwordIsBad(){
   $("#id_password").addClass("badPassword");
   $("#password_li").removeClass("pass");
   $("#password_li").addClass("fail");
+  $("#submit_button").attr("disabled",true);
+
 }
 
 // Bootstrap our passProtect functionality after the page has fully loaded.
